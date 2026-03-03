@@ -24,8 +24,7 @@ fi
 TITLE="${1:-}"
 CONFIG=$(cat "$CONFIG_FILE")
 
-LANG_DISPLAY=$(echo "$CONFIG" | jq -r '.language.display // "ko"')
-LANG_DOCUMENT=$(echo "$CONFIG" | jq -r '.language.document // "en"')
+LANGUAGE=$(echo "$CONFIG" | jq -r '.language // "en"')
 DOCS_PATH=$(echo "$CONFIG" | jq -r '.docs.path // "./updocs"')
 PROJECTS_DIR=$(echo "$CONFIG" | jq -r '.docs.projects_dir // "projects"')
 MISSIONS_DIR=$(echo "$CONFIG" | jq -r '.docs.missions_dir // "missions"')
@@ -120,8 +119,7 @@ jq -n \
   --argjson product_docs "$PRODUCT_DOCS" \
   --argjson missions "$MISSIONS" \
   --arg suggested_slug "$SUGGESTED_SLUG" \
-  --arg lang_display "$LANG_DISPLAY" \
-  --arg lang_document "$LANG_DOCUMENT" \
+  --arg language "$LANGUAGE" \
   --arg docs_path "$DOCS_PATH" \
   --arg missions_dir "$MISSIONS_DIR" \
   '{
@@ -129,6 +127,6 @@ jq -n \
     product_docs: $product_docs,
     missions: $missions,
     suggested_slug: $suggested_slug,
-    language: { display: $lang_display, document: $lang_document },
+    language: $language,
     docs_config: { path: $docs_path, missions_dir: $missions_dir }
   }'

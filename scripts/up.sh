@@ -108,9 +108,8 @@ main() {
   fi
 
   # Global config fields
-  local language_display language_document docs_path projects_dir missions_dir
-  language_display=$(echo "$config" | jq -r '.language.display // "ko"')
-  language_document=$(echo "$config" | jq -r '.language.document // "en"')
+  local language docs_path projects_dir missions_dir
+  language=$(echo "$config" | jq -r '.language // "en"')
   docs_path=$(echo "$config" | jq -r '.docs.path // "./updocs"')
   projects_dir=$(echo "$config" | jq -r '.docs.projects_dir // "projects"')
   missions_dir=$(echo "$config" | jq -r '.docs.missions_dir // "missions"')
@@ -246,8 +245,7 @@ main() {
       --argjson warnings "$warnings" \
       --argjson extraction "$extraction" \
       --argjson changed_files "$changed_files" \
-      --arg lang_display "$language_display" \
-      --arg lang_document "$language_document" \
+      --arg language "$language" \
       --arg docs_path "$docs_path" \
       --arg projects_dir "$projects_dir" \
       --arg missions_dir "$missions_dir" \
@@ -264,7 +262,7 @@ main() {
         warnings: $warnings,
         extraction: $extraction,
         changed_files: $changed_files,
-        language: { display: $lang_display, document: $lang_document },
+        language: $language,
         docs_config: { path: $docs_path, projects_dir: $projects_dir, missions_dir: $missions_dir },
         missions_in_progress: $missions_in_progress
       }')

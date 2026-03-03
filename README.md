@@ -327,8 +327,7 @@ updoc:                                              Detect merge → Update docs
 
 | Field                       | What                             | Default      |
 | --------------------------- | -------------------------------- | ------------ |
-| `language.display`          | CLI output language              | `ko`         |
-| `language.document`         | Generated docs language          | `en`         |
+| `language`                  | Output & docs language           | `en`         |
 | `projects[].type`           | Framework (`null` = auto-detect) | `null`       |
 | `projects[].default_branch` | Branch for doc updates           | `main`       |
 | `docs.path`                 | Docs root                        | `./updocs`   |

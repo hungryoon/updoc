@@ -84,7 +84,7 @@ updoc 초기 설정을 시작합니다.
 이 설정으로 진행할까요? 프로젝트 설명을 추가하려면 입력해주세요.
 ```
 - AskUserQuestion으로 사용자에게 확인
-- AskUserQuestion으로 language 선택 (display: ko/en, document: ko/en)
+- AskUserQuestion으로 language 선택 (ko/en)
 - `updoc.config.json`을 Write로 생성 (templates/config.json 구조 참고, projects 배열에 감지된 프로젝트 추가)
 - Step 2로 계속 진행
 
@@ -142,7 +142,7 @@ JSON 배열의 각 프로젝트에 대해 `mode`에 따라 분기:
 
 3. 마커 블록 내용 작성 규칙:
    - **extraction JSON만 보고 작성**. 코드 파일을 직접 읽지 않는다.
-   - language.document 언어로 작성 (en이면 영어, ko이면 한국어)
+   - language 언어로 작성 (en이면 영어, ko이면 한국어)
    - 작성 섹션:
      - **Overview**: 프로젝트 설명 (config의 description + extraction 기반)
      - **Directory Structure**: extraction.structure.directories 기반 트리
@@ -185,7 +185,7 @@ bash "$UPDOC_ROOT/scripts/update-sync-state.sh" "{name}" "{head}" "{type}"
 
 ### Step 7: 변경 리포트
 
-language.display 언어로 변경 리포트 출력.
+language 언어로 변경 리포트 출력.
 
 ko 예시:
 ```

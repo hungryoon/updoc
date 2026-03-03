@@ -79,19 +79,19 @@ JSON 파싱. `error` 필드가 있으면 에러 출력 후 종료.
    - `{date}` → 현재 날짜 (YYYY-MM-DD)
    - `{branch}` → slug 기반 브랜치명 (예: `feat/upick`)
 3. 각 섹션을 기획 대화 결과로 채움
-4. language.document 언어로 작성
-5. 파일 저장: `{docs_config.path}/{docs_config.missions_dir}/{slug}.md`
+4. language 언어로 작성
+5. 파일 저장: `{docs_config.path}/{docs_config.missions_dir}/{date}-{slug}.md` (date는 YYYY-MM-DD 형식)
 
 ### Step 7: 다음 단계 요약 출력 (필수)
 
-미션 생성 후 반드시 다음 정보를 출력한다 (language.display 언어로):
+미션 생성 후 반드시 다음 정보를 출력한다 (language 언어로):
 
 ko 예시:
 ```
 ## 다음 단계
 
 ### 미션: feat-upick-추가
-- 📄 updocs/missions/feat-upick-추가.md 생성됨
+- 📄 updocs/missions/2026-03-03-feat-upick-추가.md 생성됨
 
 ### 프로젝트별 태스크
 #### updoc
@@ -111,7 +111,7 @@ en 예시:
 ## Next Steps
 
 ### Mission: feat-upick
-- 📄 Created updocs/missions/feat-upick.md
+- 📄 Created updocs/missions/2026-03-03-feat-upick.md
 
 ### Tasks by Project
 #### updoc

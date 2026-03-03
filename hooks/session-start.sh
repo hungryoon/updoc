@@ -16,7 +16,7 @@ fi
 
 CONFIG=$(cat "$CONFIG_FILE")
 VERSION=$(echo "$CONFIG" | jq -r '.version // "0.1.0"')
-LANG_DISPLAY=$(echo "$CONFIG" | jq -r '.language.display // "ko"')
+LANGUAGE=$(echo "$CONFIG" | jq -r '.language // "en"')
 PROJECT_COUNT=$(echo "$CONFIG" | jq '.projects | length')
 DOCS_PATH=$(echo "$CONFIG" | jq -r '.docs.path // "./updocs"')
 MISSIONS_DIR=$(echo "$CONFIG" | jq -r '.docs.missions_dir // "missions"')
@@ -55,7 +55,7 @@ fi
 
 # --- Output ---
 
-if [ "$LANG_DISPLAY" = "en" ]; then
+if [ "$LANGUAGE" = "en" ]; then
   echo ""
   echo "📋 updoc v${VERSION}"
   echo "Projects: ${PROJECT_COUNT} registered / ${SYNCED_COUNT} synced"

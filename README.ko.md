@@ -327,8 +327,7 @@ updoc:                                              머지 감지 → 문서 갱
 
 | 필드                        | 설명                            | 기본값       |
 | --------------------------- | ------------------------------- | ------------ |
-| `language.display`          | CLI 출력 언어                   | `ko`         |
-| `language.document`         | 생성되는 문서 언어              | `en`         |
+| `language`                  | 출력 및 문서 언어               | `en`         |
 | `projects[].type`           | 프레임워크 (`null` = 자동 감지) | `null`       |
 | `projects[].default_branch` | 문서 갱신 대상 브랜치           | `main`       |
 | `docs.path`                 | 문서 루트                       | `./updocs`   |

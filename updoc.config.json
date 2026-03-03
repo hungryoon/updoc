@@ -1,15 +1,15 @@
 {
-  "version": "0.1.0",
-  "language": { "display": "ko", "document": "en" },
+  "version": "0.1.1",
+  "language": "en",
   "projects": [
     {
       "name": "updoc",
       "path": ".",
-      "type": null,
+      "type": "generic",
       "default_branch": "main",
-      "description": "코드베이스 문서화 & 기획 플러그인",
-      "last_sync_commit": null,
-      "last_sync_date": null
+      "description": "Rotten docs ALWAYS make rotten plans. updoc keeps them fresh.",
+      "last_sync_commit": "19a27c6",
+      "last_sync_date": "2026-03-03T09:34:47Z"
     }
   ],
   "docs": {

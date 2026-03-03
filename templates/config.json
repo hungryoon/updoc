@@ -1,6 +1,6 @@
 {
-  "version": "0.1.0",
-  "language": { "display": "ko", "document": "en" },
+  "version": "0.1.1",
+  "language": "en",
   "projects": [],
   "docs": {
     "path": "./updocs",
