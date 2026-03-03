@@ -1,92 +1,92 @@
 ---
 name: uplan
-description: 프로젝트 문서를 기반으로 미션을 기획합니다.
+description: Plan missions based on project documentation.
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash, Write, Edit, AskUserQuestion
 ---
 
 # /updoc:uplan
 
-프로젝트 문서를 기반으로 미션(기획 문서)을 작성하는 스킬.
+A skill that creates mission (planning) documents based on project documentation.
 
-**사용법:** `/updoc:uplan "미션 제목"` 또는 `/updoc:uplan` (제목은 대화 중 결정)
+**Usage:** `/updoc:uplan "mission title"` or `/updoc:uplan` (title decided during conversation)
 
-## 실행 절차
+## Procedure
 
-### Step 1: 플러그인 루트 탐색 및 컨텍스트 수집
+### Step 1: Find plugin root and gather context
 
-아래 bash를 실행해서 플러그인 루트(`UPDOC_ROOT`)를 찾는다:
+Run the following bash to locate the plugin root (`UPDOC_ROOT`):
 
 ```bash
-# 1) 개발 모드: cwd에 scripts/uplan-prepare.sh가 있으면 여기가 플러그인 루트
+# 1) Dev mode: if scripts/uplan-prepare.sh exists in cwd, this is the plugin root
 if [ -f "./scripts/uplan-prepare.sh" ] && [ -f "./.claude-plugin/plugin.json" ]; then
   UPDOC_ROOT="."
-# 2) 마켓플레이스 설치: 캐시에서 탐색
+# 2) Marketplace install: search cache
 else
   UPDOC_ROOT=$(find ~/.claude/plugins/cache -maxdepth 6 -path "*/updoc/*/.claude-plugin/plugin.json" -print -quit 2>/dev/null | sed 's|/.claude-plugin/plugin.json||')
 fi
 
-# 3) 못 찾으면 마켓플레이스 디렉토리 탐색
+# 3) Fallback: search marketplaces directory
 if [ -z "$UPDOC_ROOT" ] || [ ! -f "$UPDOC_ROOT/scripts/uplan-prepare.sh" ]; then
   UPDOC_ROOT=$(find ~/.claude/plugins/marketplaces -maxdepth 6 -path "*/updoc/*/.claude-plugin/plugin.json" -print -quit 2>/dev/null | sed 's|/.claude-plugin/plugin.json||')
 fi
 ```
 
-UPDOC_ROOT를 찾지 못하면 에러: "updoc 스크립트를 찾을 수 없습니다. 플러그인이 설치되어 있는지 확인하세요."
+If UPDOC_ROOT is not found, error: "Cannot find updoc scripts. Please verify the plugin is installed."
 
-### Step 2: 컨텍스트 수집
+### Step 2: Gather context
 
 ```bash
-bash "$UPDOC_ROOT/scripts/uplan-prepare.sh" "{제목}"
+bash "$UPDOC_ROOT/scripts/uplan-prepare.sh" "{title}"
 ```
 
-JSON 파싱. `error` 필드가 있으면 에러 출력 후 종료.
+Parse JSON. If `error` field exists, print error and exit.
 
-### Step 3: 문서 존재 확인
+### Step 3: Check documentation existence
 
-`overview_exists: false`인 프로젝트가 있으면:
-- 경고: "다음 프로젝트의 문서가 아직 없습니다: {names}. `/updoc:up`을 먼저 실행하는 것을 권장합니다."
-- 사용자가 계속 진행을 원하면 문서 없이 진행 (제한적 기획)
+If any project has `overview_exists: false`:
+- Warning: "Documentation not found for the following projects: {names}. Running `/updoc:up` first is recommended."
+- If user wants to continue, proceed without docs (limited planning)
 
-### Step 4: 컨텍스트 로드
+### Step 4: Load context
 
-1. `overview_exists: true`인 모든 프로젝트의 overview.md를 Read로 읽기
-2. product_docs가 있으면 참조 (없으면 생략)
-3. 기존 미션 파일이 있으면 Read로 읽기 (중복 방지 + 컨텍스트)
+1. Read overview.md for all projects with `overview_exists: true`
+2. Reference product_docs if present (skip if none)
+3. Read existing mission files if any (for deduplication + context)
 
-### Step 5: 기획 대화
+### Step 5: Planning conversation
 
-사용자와 대화하며 미션을 구체화한다:
+Have a conversation with the user to flesh out the mission:
 
-1. **배경**: 왜 이 미션이 필요한지
-2. **AS-IS**: 현재 상태 (프로젝트 문서 기반)
-3. **TO-BE**: 목표 상태
-4. **영향 범위**: 어떤 프로젝트의 어떤 부분이 영향받는지
-   - **프로젝트 문서 기반으로만** 분석. 문서에 없는 정보는 추측하지 않음
-   - 문서가 불충분하면 "TODO: /updoc:up 이후 재분석 필요" 표기
-5. **API 계약**: 프로젝트 간 통신이 필요하면 작성
-   - 엔드포인트 + request/response 스키마
-   - 구현 방식(DB 스키마, 내부 로직)은 적지 않음
-6. **태스크**: `{프로젝트명}-{순번}` 형식
-   - 각 태스크에 프로젝트 귀속 명시
-   - 순번 재사용 금지
+1. **Background**: Why this mission is needed
+2. **AS-IS**: Current state (based on project docs)
+3. **TO-BE**: Target state
+4. **Impact Scope**: Which parts of which projects are affected
+   - Analyze **based on project docs only**. Do not guess information not in docs
+   - If docs are insufficient, mark "TODO: re-analyze after /updoc:up"
+5. **API Contracts**: Write if cross-project communication is needed
+   - Endpoints + request/response schemas
+   - Do not include implementation details (DB schemas, internal logic)
+6. **Tasks**: Format as `{project-name}-{number}`
+   - Attribute each task to its project
+   - Never reuse task numbers
 
-### Step 6: 미션 문서 생성
+### Step 6: Create mission document
 
-1. 템플릿 경로: `$UPDOC_ROOT/templates/mission.md` 를 Read로 읽어 기반으로 생성
-2. frontmatter 치환:
-   - `{slug}` → suggested_slug 또는 사용자 지정 slug
-   - `{date}` → 현재 날짜 (YYYY-MM-DD)
-   - `{branch}` → slug 기반 브랜치명 (예: `feat/upick`)
-3. 각 섹션을 기획 대화 결과로 채움
-4. language 언어로 작성
-5. 파일 저장: `{docs_config.path}/{docs_config.missions_dir}/{date}-{slug}.md` (date는 YYYY-MM-DD 형식)
+1. Template path: Read `$UPDOC_ROOT/templates/mission.md` as a base
+2. Substitute frontmatter:
+   - `{slug}` → suggested_slug or user-specified slug
+   - `{date}` → current date (YYYY-MM-DD)
+   - `{branch}` → branch name based on slug (e.g., `feat/upick`)
+3. Fill each section with planning conversation results
+4. Write in the configured language
+5. Save file: `{docs_config.path}/{docs_config.missions_dir}/{date}-{slug}.md` (date in YYYY-MM-DD format)
 
-### Step 7: 다음 단계 요약 출력 (필수)
+### Step 7: Output next steps summary (required)
 
-미션 생성 후 반드시 다음 정보를 출력한다 (language 언어로):
+After mission creation, always output the following (in the configured language):
 
-ko 예시:
+ko example:
 ```
 ## 다음 단계
 
@@ -106,7 +106,7 @@ ko 예시:
    - `cd .` (updoc)
 ```
 
-en 예시:
+en example:
 ```
 ## Next Steps
 
@@ -126,4 +126,4 @@ en 예시:
    - `cd .` (updoc)
 ```
 
-API 계약이 있으면 요약도 포함한다.
+Include API contract summary if applicable.

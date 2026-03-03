@@ -1,193 +1,193 @@
 ---
 name: up
-description: 프로젝트 코드를 스캔해서 문서를 생성/갱신합니다.
+description: Scan project code to generate or update documentation.
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash, Write, Edit, AskUserQuestion
 ---
 
 # /updoc:up
 
-프로젝트 코드를 스캔해서 기술 문서를 생성(init) 또는 갱신(sync)하는 스킬.
+A skill that scans project code to generate (init) or update (sync) technical documentation.
 
-## 실행 절차
+## Procedure
 
-### Step 1: 플러그인 루트 탐색 및 up.sh 실행
+### Step 1: Find plugin root and run up.sh
 
-아래 bash를 실행해서 플러그인 루트(`UPDOC_ROOT`)를 찾고 up.sh를 실행한다:
+Run the following bash to locate the plugin root (`UPDOC_ROOT`) and run up.sh:
 
 ```bash
-# 1) 개발 모드: cwd에 scripts/up.sh가 있으면 여기가 플러그인 루트
+# 1) Dev mode: if scripts/up.sh exists in cwd, this is the plugin root
 if [ -f "./scripts/up.sh" ] && [ -f "./.claude-plugin/plugin.json" ]; then
   UPDOC_ROOT="."
-# 2) 마켓플레이스 설치: 캐시에서 탐색
+# 2) Marketplace install: search cache
 else
   UPDOC_ROOT=$(find ~/.claude/plugins/cache -maxdepth 6 -path "*/updoc/*/.claude-plugin/plugin.json" -print -quit 2>/dev/null | sed 's|/.claude-plugin/plugin.json||')
 fi
 
-# 3) 못 찾으면 마켓플레이스 디렉토리 탐색
+# 3) Fallback: search marketplaces directory
 if [ -z "$UPDOC_ROOT" ] || [ ! -f "$UPDOC_ROOT/scripts/up.sh" ]; then
   UPDOC_ROOT=$(find ~/.claude/plugins/marketplaces -maxdepth 6 -path "*/updoc/*/.claude-plugin/plugin.json" -print -quit 2>/dev/null | sed 's|/.claude-plugin/plugin.json||')
 fi
 ```
 
-UPDOC_ROOT를 찾지 못하면 에러: "updoc 스크립트를 찾을 수 없습니다. 플러그인이 설치되어 있는지 확인하세요."
+If UPDOC_ROOT is not found, error: "Cannot find updoc scripts. Please verify the plugin is installed."
 
-이후 모든 스크립트/템플릿 참조에 `$UPDOC_ROOT`를 사용한다:
-- 스크립트: `$UPDOC_ROOT/scripts/`
-- 템플릿: `$UPDOC_ROOT/templates/`
+Use `$UPDOC_ROOT` for all subsequent script/template references:
+- Scripts: `$UPDOC_ROOT/scripts/`
+- Templates: `$UPDOC_ROOT/templates/`
 
-### Step 1.5: 초기 설정 확인
+### Step 1.5: Check initial setup
 
-`updoc.config.json`이 현재 디렉토리에 존재하는지 확인한다.
+Check if `updoc.config.json` exists in the current directory.
 
-#### 이미 존재하는 경우 → Step 2로 진행
+#### Already exists → Proceed to Step 2
 
-#### 존재하지 않는 경우 → 초기 설정 흐름:
+#### Does not exist → Initial setup flow:
 
-1. init.sh 실행:
+1. Run init.sh:
 ```bash
 bash "$UPDOC_ROOT/scripts/init.sh"
 ```
 
-2. stdout의 JSON을 파싱한다. `mode` 필드에 따라 분기:
+2. Parse the JSON from stdout. Branch based on the `mode` field:
 
-**mode: "empty"** (프로젝트 코드가 감지되지 않은 경우):
-- 아래 디렉토리를 생성한다:
+**mode: "empty"** (no project code detected):
+- Create the following directories:
   - `projects/`
   - `updocs/projects/`
   - `updocs/missions/`
-- config는 생성하지 않는다
-- 안내 메시지를 출력하고 종료:
+- Do not create config
+- Print a message and exit:
 ```
-프로젝트 코드가 감지되지 않았습니다.
+No project code detected.
 
-디렉토리 구조를 생성했습니다:
+Created directory structure:
   projects/
   updocs/projects/
   updocs/missions/
 
-projects/ 폴더에 프로젝트를 clone한 뒤 다시 /updoc:up을 실행하세요.
-예: git clone git@github.com:org/api.git projects/api
+Clone a project into projects/ and run /updoc:up again.
+e.g.: git clone git@github.com:org/api.git projects/api
 ```
 
-**mode: "single"** (현재 디렉토리가 프로젝트인 경우):
-- 감지된 프로젝트 정보를 표시:
+**mode: "single"** (current directory is a project):
+- Display detected project info:
 ```
-updoc 초기 설정을 시작합니다.
+Starting updoc initial setup.
 
-감지된 프로젝트:
-  이름: {name}
-  경로: .
-  브랜치: {default_branch}
-  프레임워크: {type}
+Detected project:
+  Name: {name}
+  Path: .
+  Branch: {default_branch}
+  Framework: {type}
 
-이 설정으로 진행할까요? 프로젝트 설명을 추가하려면 입력해주세요.
+Proceed with this setup? Enter a project description if you'd like to add one.
 ```
-- AskUserQuestion으로 사용자에게 확인
-- AskUserQuestion으로 language 선택 (ko/en)
-- `updoc.config.json`을 Write로 생성 (templates/config.json 구조 참고, projects 배열에 감지된 프로젝트 추가)
-- Step 2로 계속 진행
+- AskUserQuestion to confirm with user
+- AskUserQuestion to select language (ko/en)
+- Create `updoc.config.json` with Write (refer to templates/config.json structure, add detected project to projects array)
+- Continue to Step 2
 
-**mode: "hub"** (projects/ 하위에 프로젝트가 감지된 경우):
-- 감지된 프로젝트 목록을 표시:
+**mode: "hub"** (projects detected under projects/):
+- Display detected project list:
 ```
-projects/ 하위에서 프로젝트를 감지했습니다:
+Detected projects under projects/:
   1. {name} ({type}) — {path}
   2. {name} ({type}) — {path}
 
-이 프로젝트들을 등록하고 문서를 생성할까요?
+Register these projects and generate documentation?
 ```
-- AskUserQuestion으로 사용자에게 확인
-- AskUserQuestion으로 language 선택
-- `updoc.config.json`을 Write로 생성 (모든 감지된 프로젝트 포함)
-- Step 2로 계속 진행
+- AskUserQuestion to confirm with user
+- AskUserQuestion to select language
+- Create `updoc.config.json` with Write (include all detected projects)
+- Continue to Step 2
 
-### Step 2: up.sh 실행
+### Step 2: Run up.sh
 
 ```bash
 bash "$UPDOC_ROOT/scripts/up.sh"
 ```
 
-stdout의 JSON 배열을 파싱한다. exit code가 0이 아니면 에러 JSON.
+Parse the JSON array from stdout. If exit code is non-zero, it's error JSON.
 
-### Step 3: 에러 처리
+### Step 3: Error handling
 
-JSON 배열의 각 항목에 `error` 필드가 있으면 에러. 하나라도 에러면 전부 중단.
+If any item in the JSON array has an `error` field, it's an error. If any error exists, abort all.
 
-에러별 안내:
-- `branch_mismatch`: "{name}: default branch({default_branch})에서만 실행할 수 있습니다. 현재 브랜치: {current_branch}"
-- `not_found`: "{name}: 프로젝트 경로를 찾을 수 없습니다."
-- `git_not_available`: "{name}: git 저장소가 아닙니다."
-- `extractor_failed`: "{name}: 코드 분석 실패 — {detail}"
+Error messages:
+- `branch_mismatch`: "{name}: Can only run on default branch ({default_branch}). Current branch: {current_branch}"
+- `not_found`: "{name}: Project path not found."
+- `git_not_available`: "{name}: Not a git repository."
+- `extractor_failed`: "{name}: Code analysis failed — {detail}"
 
-에러 출력 후 종료. 문서 작성을 진행하지 않는다.
+Print errors and exit. Do not proceed with documentation.
 
-### Step 4: 프로젝트별 문서 처리
+### Step 4: Per-project documentation
 
-JSON 배열의 각 프로젝트에 대해 `mode`에 따라 분기:
+For each project in the JSON array, branch based on `mode`:
 
-#### Init 모드 (mode == "init")
+#### Init mode (mode == "init")
 
-1. docs 디렉토리 생성:
+1. Create docs directories:
    ```
    {docs_config.path}/{docs_config.projects_dir}/{name}/
    {docs_config.path}/{docs_config.projects_dir}/{name}/domains/
    {docs_config.path}/{docs_config.missions_dir}/
    ```
 
-2. `overview.md` 생성:
-   - `$UPDOC_ROOT/templates/project-overview.md` 를 Read로 읽어 기반으로 생성
-   - frontmatter 치환: `{name}` → 프로젝트 이름, `{type}` → type, `{commit}` → head, `{date}` → 현재 날짜
-   - `<!-- updoc:begin -->` ~ `<!-- updoc:end -->` 마커 블록 안에 문서 내용 작성
+2. Create `overview.md`:
+   - Read `$UPDOC_ROOT/templates/project-overview.md` as a base
+   - Substitute frontmatter: `{name}` → project name, `{type}` → type, `{commit}` → head, `{date}` → current date
+   - Write documentation content inside `<!-- updoc:begin -->` ~ `<!-- updoc:end -->` marker block
 
-3. 마커 블록 내용 작성 규칙:
-   - **extraction JSON만 보고 작성**. 코드 파일을 직접 읽지 않는다.
-   - language 언어로 작성 (en이면 영어, ko이면 한국어)
-   - 작성 섹션:
-     - **Overview**: 프로젝트 설명 (config의 description + extraction 기반)
-     - **Directory Structure**: extraction.structure.directories 기반 트리
-     - **Entry Points**: extraction.structure.entry_points (있으면)
-     - **Configuration Files**: extraction.structure.config_files (있으면)
-     - **Dependencies**: extraction.dependencies (있으면)
-   - modules, routes, models가 빈 배열이면 해당 섹션을 생략하거나 "Generic extractor는 이 정보를 추출하지 않습니다. 프레임워크별 extractor가 필요합니다." 명시
-   - **추측 금지**: extraction에 없는 정보를 추측하지 않음. 불확실하면 `TODO: 수동 확인 필요` 표기
+3. Marker block content rules:
+   - **Write based on extraction JSON only**. Do not read code files directly.
+   - Write in the language setting (en = English, ko = Korean)
+   - Sections to write:
+     - **Overview**: Project description (config description + extraction-based)
+     - **Directory Structure**: Tree based on extraction.structure.directories
+     - **Entry Points**: extraction.structure.entry_points (if present)
+     - **Configuration Files**: extraction.structure.config_files (if present)
+     - **Dependencies**: extraction.dependencies (if present)
+   - If modules, routes, models are empty arrays, skip those sections or note "Generic extractor does not extract this information. A framework-specific extractor is needed."
+   - **No guessing**: Do not infer information not in extraction. If uncertain, mark `TODO: manual verification needed`
 
-#### Sync 모드 (mode == "sync")
+#### Sync mode (mode == "sync")
 
-1. 기존 overview.md 읽기:
+1. Read existing overview.md:
    ```
    {docs_config.path}/{docs_config.projects_dir}/{name}/overview.md
    ```
 
-2. **마커 블록만 교체**:
-   - `<!-- updoc:begin -->` 부터 `<!-- updoc:end -->` 까지의 내용만 새로 작성
-   - 마커 밖 내용은 **절대 수정하지 않는다**
-   - frontmatter의 `synced_from`과 `synced_at`만 갱신
+2. **Replace marker block only**:
+   - Rewrite content from `<!-- updoc:begin -->` to `<!-- updoc:end -->` only
+   - **Never modify** content outside markers
+   - Update only `synced_from` and `synced_at` in frontmatter
 
-3. 내용 작성:
-   - extraction 기반으로 마커 블록 내용을 새로 작성 (init과 동일한 규칙)
-   - `changed_files`가 있으면 변경된 파일의 실제 코드를 읽어서 문서에 반영할지 Claude가 판단
-   - 단, 마커 블록 밖에 사용자가 작성한 내용은 절대 건드리지 않는다
+3. Content writing:
+   - Rewrite marker block content based on extraction (same rules as init)
+   - If `changed_files` exists, Claude decides whether to read actual code of changed files to reflect in docs
+   - Never touch user-written content outside the marker block
 
-### Step 5: 미션 상태 감지
+### Step 5: Mission status detection
 
-`missions_in_progress`에 `merged: true`인 항목이 있으면:
-- 사용자에게 확인: "{slug} 브랜치({branch})가 머지됐습니다. 미션을 완료 처리할까요?"
-- Y → 미션 파일의 frontmatter `status`를 `done`으로 변경
-- N → 유지
+If `missions_in_progress` contains items with `merged: true`:
+- Ask user: "{slug} branch ({branch}) has been merged. Complete this mission?"
+- Y → Change mission file frontmatter `status` to `done`
+- N → Keep as-is
 
-### Step 6: sync state 갱신
+### Step 6: Update sync state
 
-각 프로젝트에 대해:
+For each project:
 ```bash
 bash "$UPDOC_ROOT/scripts/update-sync-state.sh" "{name}" "{head}" "{type}"
 ```
 
-### Step 7: 변경 리포트
+### Step 7: Change report
 
-language 언어로 변경 리포트 출력.
+Output the change report in the configured language.
 
-ko 예시:
+ko example:
 ```
 ## updoc 문서 갱신 완료
 
@@ -199,7 +199,7 @@ ko 예시:
 동기화 상태가 updoc.config.json에 저장되었습니다.
 ```
 
-en 예시:
+en example:
 ```
 ## updoc Documentation Updated
 
