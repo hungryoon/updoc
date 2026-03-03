@@ -1,0 +1,22 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "updoc",
+  "version": "0.1.0",
+  "description": "Rotten docs ALWAYS make rotten plans. updoc keeps them fresh.",
+  "owner": {
+    "name": "hungryoon"
+  },
+  "plugins": [
+    {
+      "name": "updoc",
+      "description": "Rotten docs ALWAYS make rotten plans. updoc keeps them fresh.",
+      "version": "0.1.0",
+      "author": {
+        "name": "hungryoon"
+      },
+      "source": ".",
+      "category": "productivity",
+      "keywords": ["documentation", "planning", "codebase", "sync"]
+    }
+  ]
+}

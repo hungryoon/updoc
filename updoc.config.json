@@ -1,0 +1,20 @@
+{
+  "version": "0.1.0",
+  "language": { "display": "ko", "document": "en" },
+  "projects": [
+    {
+      "name": "updoc",
+      "path": ".",
+      "type": null,
+      "default_branch": "main",
+      "description": "코드베이스 문서화 & 기획 플러그인",
+      "last_sync_commit": null,
+      "last_sync_date": null
+    }
+  ],
+  "docs": {
+    "path": "./updocs",
+    "projects_dir": "projects",
+    "missions_dir": "missions"
+  }
+}

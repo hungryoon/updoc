@@ -1,0 +1,10 @@
+{
+  "version": "0.1.0",
+  "language": { "display": "ko", "document": "en" },
+  "projects": [],
+  "docs": {
+    "path": "./updocs",
+    "projects_dir": "projects",
+    "missions_dir": "missions"
+  }
+}
