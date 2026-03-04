@@ -1,6 +1,6 @@
 {
   "name": "updoc",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Rotten docs ALWAYS make rotten plans. updoc keeps them fresh.",
   "author": { "name": "hungryoon" },
   "repository": "https://github.com/hungryoon/updoc",

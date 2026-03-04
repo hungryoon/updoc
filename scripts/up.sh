@@ -223,11 +223,25 @@ main() {
     local changed_files="[]"
 
     if [ -n "$last_sync_commit" ]; then
-      mode="sync"
-      # Get changed files since last sync
-      local diff_output
-      diff_output=$(cd "$path" && git diff --name-only "$last_sync_commit" HEAD -- . 2>/dev/null || echo "")
-      changed_files=$(source "$SCRIPT_DIR/extractors/common.sh" && to_json_array "$diff_output")
+      local raw_diff filtered_diff
+      raw_diff=$(cd "$path" && git diff --name-only "$last_sync_commit" HEAD -- . 2>/dev/null || echo "")
+
+      # Strip leading "./" and trailing "/" from docs_path for grep pattern
+      local normalized_docs
+      normalized_docs=$(echo "$docs_path" | sed 's|^\./||' | sed 's|/$||')
+
+      # Exclude updoc-managed files from diff to prevent sync loop
+      if [ -n "$raw_diff" ]; then
+        filtered_diff=$(echo "$raw_diff" | grep -v "^${normalized_docs}/" | grep -v "^updoc\.config\.json$" || true)
+      fi
+
+      if [ -n "$filtered_diff" ]; then
+        mode="sync"
+        changed_files=$(source "$SCRIPT_DIR/extractors/common.sh" && to_json_array "$filtered_diff")
+      else
+        mode="no_change"
+        changed_files="[]"
+      fi
     fi
 
     # --- Build result ---

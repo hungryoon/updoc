@@ -1,8 +1,8 @@
 ---
 project: updoc
 type: generic
-synced_from: 26ace43
-synced_at: 2026-03-03
+synced_from: eff346c
+synced_at: 2026-03-04
 ---
 
 # updoc

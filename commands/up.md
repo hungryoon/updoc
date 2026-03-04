@@ -152,6 +152,10 @@ For each project in the JSON array, branch based on `mode`:
    - If modules, routes, models are empty arrays, skip those sections or note "Generic extractor does not extract this information. A framework-specific extractor is needed."
    - **No guessing**: Do not infer information not in extraction. If uncertain, mark `TODO: manual verification needed`
 
+#### No-change mode (mode == "no_change")
+
+No code changes since last sync. Skip documentation update for this project.
+
 #### Sync mode (mode == "sync")
 
 1. Read existing overview.md:
@@ -169,19 +173,28 @@ For each project in the JSON array, branch based on `mode`:
    - If `changed_files` exists, Claude decides whether to read actual code of changed files to reflect in docs
    - Never touch user-written content outside the marker block
 
-### Step 5: Mission status detection
+### Step 5: Mission status check
 
-If `missions_in_progress` contains items with `merged: true`:
-- Ask user: "{slug} branch ({branch}) has been merged. Complete this mission?"
-- Y → Change mission file frontmatter `status` to `done`
-- N → Keep as-is
+If `missions_in_progress` is non-empty, display all non-done missions:
+
+**Merged missions** (`merged: true`):
+- Display: "✓ {slug} — branch {branch} merged. Mark as done?"
+- AskUserQuestion per mission → Y: update frontmatter `status: done`, add `completed: {date}` / N: skip
+
+**Other non-done missions** (`merged: false`):
+- Display: "• {slug} ({status}, branch: {branch})"
+- Display only. User can request to close any.
+
+If `missions_in_progress` is empty, skip silently.
 
 ### Step 6: Update sync state
 
-For each project:
+For each project where mode is "init" or "sync":
 ```bash
 bash "$UPDOC_ROOT/scripts/update-sync-state.sh" "{name}" "{head}" "{type}"
 ```
+
+Skip `no_change` projects — their sync state is already current.
 
 ### Step 7: Change report
 
@@ -199,6 +212,13 @@ ko example:
 동기화 상태가 updoc.config.json에 저장되었습니다.
 ```
 
+```
+## updoc 문서 갱신 완료
+
+### updoc (no_change)
+- ⏭️ 마지막 동기화 이후 코드 변경 없음 — 건너뜀
+```
+
 en example:
 ```
 ## updoc Documentation Updated
@@ -209,4 +229,11 @@ en example:
 - Type: generic (extractor: generic)
 
 Sync state saved to updoc.config.json.
+```
+
+```
+## updoc Documentation Updated
+
+### updoc (no_change)
+- ⏭️ No code changes since last sync — skipped
 ```
