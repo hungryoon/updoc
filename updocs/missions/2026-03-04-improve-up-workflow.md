@@ -1,7 +1,8 @@
 ---
 slug: improve-up-workflow
 created: 2026-03-04
-status: draft
+status: done
+completed: 2026-03-04
 branch: feat/improve-up-workflow
 ---
 

@@ -1,5 +1,5 @@
 {
-  "version": "0.1.1",
+  "version": "0.1.2",
   "language": "en",
   "projects": [
     {
@@ -8,8 +8,8 @@
       "type": "generic",
       "default_branch": "main",
       "description": "Rotten docs ALWAYS make rotten plans. updoc keeps them fresh.",
-      "last_sync_commit": "eff346c",
-      "last_sync_date": "2026-03-04T04:26:05Z"
+      "last_sync_commit": "613293d",
+      "last_sync_date": "2026-03-04T04:41:02Z"
     }
   ],
   "docs": {

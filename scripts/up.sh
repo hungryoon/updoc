@@ -75,9 +75,14 @@ detect_merged_missions() {
 
     local merged="false"
     if [ -n "$branch" ]; then
-      # Check if branch has been merged into default branch
-      if git branch --merged "$default_branch" 2>/dev/null | grep -q "$branch"; then
-        merged="true"
+      if git show-ref --verify --quiet "refs/heads/$branch" 2>/dev/null; then
+        # Branch exists — check if merged into default branch
+        if git branch --merged "$default_branch" 2>/dev/null | grep -q "$branch"; then
+          merged="true"
+        fi
+      else
+        # Branch not found — likely deleted after merge
+        merged="missing"
       fi
     fi
 
@@ -86,7 +91,7 @@ detect_merged_missions() {
       --arg status "${status:-draft}" \
       --arg branch "${branch:-}" \
       --arg path "$mission_file" \
-      --argjson merged "$merged" \
+      --arg merged "$merged" \
       '. + [{slug: $slug, status: $status, branch: $branch, path: $path, merged: $merged}]')
   done
 

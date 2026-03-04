@@ -177,11 +177,15 @@ No code changes since last sync. Skip documentation update for this project.
 
 If `missions_in_progress` is non-empty, display all non-done missions:
 
-**Merged missions** (`merged: true`):
+**Merged missions** (`merged: "true"`):
 - Display: "✓ {slug} — branch {branch} merged. Mark as done?"
 - AskUserQuestion per mission → Y: update frontmatter `status: done`, add `completed: {date}` / N: skip
 
-**Other non-done missions** (`merged: false`):
+**Branch missing missions** (`merged: "missing"`):
+- Display: "? {slug} — branch {branch} not found. Already completed?"
+- AskUserQuestion per mission → Y: update frontmatter `status: done`, add `completed: {date}` / N: skip
+
+**Other non-done missions** (`merged: "false"`):
 - Display: "• {slug} ({status}, branch: {branch})"
 - Display only. User can request to close any.
 
