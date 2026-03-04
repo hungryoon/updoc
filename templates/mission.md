@@ -1,8 +1,6 @@
 ---
 slug: {slug}
 created: {date}
-status: draft
-branch: {branch}
 ---
 
 # {slug}

@@ -13,9 +13,68 @@ if ! command -v jq &>/dev/null; then
   exit 1
 fi
 
-source "$SCRIPT_DIR/extractors/common.sh"
-
 # --- Helpers ---
+
+# Detect framework type from project files
+# Usage: detect_framework "/path/to/project"
+# Returns: framework name string (generic, nestjs, nextjs, fastapi, etc.)
+detect_framework() {
+  local project_path="$1"
+
+  # NestJS
+  if [ -f "$project_path/nest-cli.json" ] || \
+     ([ -f "$project_path/package.json" ] && grep -q '"@nestjs/core"' "$project_path/package.json" 2>/dev/null); then
+    echo "nestjs"
+    return
+  fi
+
+  # Next.js
+  if [ -f "$project_path/next.config.js" ] || [ -f "$project_path/next.config.mjs" ] || \
+     ([ -f "$project_path/package.json" ] && grep -q '"next"' "$project_path/package.json" 2>/dev/null); then
+    echo "nextjs"
+    return
+  fi
+
+  # Nuxt
+  if [ -f "$project_path/nuxt.config.ts" ] || \
+     ([ -f "$project_path/package.json" ] && grep -q '"nuxt"' "$project_path/package.json" 2>/dev/null); then
+    echo "nuxt"
+    return
+  fi
+
+  # FastAPI / Python
+  if [ -f "$project_path/pyproject.toml" ] && grep -q 'fastapi' "$project_path/pyproject.toml" 2>/dev/null; then
+    echo "fastapi"
+    return
+  fi
+
+  # Django
+  if [ -f "$project_path/manage.py" ] && grep -q 'django' "$project_path/manage.py" 2>/dev/null; then
+    echo "django"
+    return
+  fi
+
+  # Go
+  if [ -f "$project_path/go.mod" ]; then
+    echo "go"
+    return
+  fi
+
+  # Rust
+  if [ -f "$project_path/Cargo.toml" ]; then
+    echo "rust"
+    return
+  fi
+
+  # Express (generic Node.js with express)
+  if [ -f "$project_path/package.json" ] && grep -q '"express"' "$project_path/package.json" 2>/dev/null; then
+    echo "express"
+    return
+  fi
+
+  # Generic fallback
+  echo "generic"
+}
 
 # Detect default branch for a git repo
 # Usage: detect_default_branch "/path/to/repo"

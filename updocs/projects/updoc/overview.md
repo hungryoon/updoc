@@ -1,7 +1,7 @@
 ---
 project: updoc
 type: generic
-synced_from: 613293d
+synced_from: b9cf02e
 synced_at: 2026-03-04
 ---
 
@@ -11,18 +11,16 @@ synced_at: 2026-03-04
 
 ## Overview
 
-A codebase documentation & planning plugin for Claude Code. Built with shell scripts, it scans project metadata and generates living documentation.
+A codebase documentation & planning plugin for Claude Code. Built with shell scripts, it directly explores project code to generate and maintain living documentation.
 
 ## Directory Structure
 
 ```
 .
-├── commands/
-├── hooks/
-├── scripts/
-│   ├── extractors/
-│   └── lib/
-└── templates/
+├── commands/          # Skill specs (up.md, uplan.md)
+├── hooks/             # Session lifecycle hooks
+├── scripts/           # Shell scripts (up.sh, init.sh, update-sync-state.sh)
+└── templates/         # Config and document templates
 ```
 
 ## Entry Points

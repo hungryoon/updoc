@@ -90,7 +90,7 @@ updoc is a cycle:
     │                                                      │
     ▼                                                      │
  /updoc:up                                                 │
- Scan code → Extract metadata → Generate docs              │
+ Scan code → Explore project → Generate docs               │
     │                                                      │
     ▼                                                      │
  /updoc:uplan "feature"                                    │
@@ -165,8 +165,7 @@ This section is mine. updoc will never touch it. Ever.
 ```markdown
 ---
 slug: feat-game-tab
-status: draft
-branch: feat/game-tab
+created: 2026-03-03
 ---
 
 # feat-game-tab
@@ -206,11 +205,11 @@ Scans your code on the default branch. Generates or updates documentation.
 | ----------------- | ---------------------------------- | ----------------------------- |
 | **What happens**  | Creates `overview.md` from scratch | Updates only the marker block |
 | **Your notes**    | —                                  | **Untouched. Always.**        |
-| **What it reads** | Full project scan                  | Only changes since last sync  |
+| **What it reads** | Full project exploration            | Only changes since last sync  |
 
 **Branch protection:** Only runs on `main` (or your default branch). Feature branch → blocked. Only merged code is reflected in docs.
 
-**No guessing:** If the extractor can't find it, Claude doesn't write it. You'll see `TODO: manual verification needed` instead of plausible lies.
+**No guessing:** If Claude can't confirm it from the codebase, it doesn't write it. You'll see `TODO: manual verification needed` instead of plausible lies.
 
 ### `/updoc:uplan` — Plan From Reality
 
@@ -253,7 +252,7 @@ One `/updoc:uplan` → cross-project impact analysis + API contracts.
 
 **Docs reflect reality.** Only merged code gets documented. Feature branches are blocked. Your docs are always a snapshot of what's actually running.
 
-**No guessing.** Extractors pull structured metadata from your filesystem — no LLM involved. Claude writes docs from that data only. If the data doesn't have it, Claude doesn't write it.
+**No guessing.** Claude explores your codebase directly using Glob, Grep, and Read. If it can't confirm something from the code, it doesn't write it.
 
 **Your notes are never touched.** The marker block system (`<!-- updoc:begin/end -->`) separates updoc's sections from yours. Notes, architecture decisions, caveats — all preserved through every sync.
 
@@ -266,20 +265,11 @@ One `/updoc:uplan` → cross-project impact analysis + API contracts.
 When you start a session, updoc shows you where things stand:
 
 ```
-📋 updoc v0.1.0
+📋 updoc v0.2.0
 Projects: 3 registered / 3 synced
 Last sync: 2026-03-03 (a1b2c3d)
 
-⚡ Active missions:
-  - feat-game-tab (in-progress, branch: feat/game-tab)
-
 💡 /updoc:up — Update docs  |  /updoc:uplan — Start planning
-```
-
-When a mission branch is merged, updoc automatically detects it:
-
-```
-feat-game-tab branch merged. Complete mission? [Y/n]
 ```
 
 ---
@@ -290,7 +280,7 @@ feat-game-tab branch merged. Complete mission? [Y/n]
 | ------------ | ----------------------------- | ------------------------- |
 | **Purpose**  | Document & plan               | Generate code             |
 | **Scope**    | "What to build, where"        | "How to build it"         |
-| **Reads**    | Structured metadata           | Your source code directly |
+| **Reads**    | Your codebase directly        | —                         |
 | **Opinions** | Only merged code, no guessing | None about your stack     |
 
 updoc handles **what to build**. Tools like [Superpowers](https://github.com/obra/superpowers) handle **how to build it**. They pair well.
@@ -300,7 +290,7 @@ updoc:        Scan → Document → Plan → API contracts + tasks
                                           ↓
 Superpowers:                    Branch → Implement → Test → Review → Merge
                                                                        ↓
-updoc:                                              Detect merge → Update docs
+updoc:                                                         Run again → Update docs
 ```
 
 ---
@@ -355,29 +345,9 @@ git clone git@github.com:org/web.git projects/web
 <details>
 <summary><strong>Under the Hood</strong></summary>
 
-### Extractors
+### Code Exploration
 
-Shell scripts that pull structured metadata. No LLM. Pure filesystem analysis.
-
-```json
-{
-  "name": "my-api",
-  "framework": "nestjs",
-  "structure": {
-    "directories": ["./src", "./src/modules", "./src/guards"],
-    "entry_points": ["src/main.ts"],
-    "config_files": ["nest-cli.json", "tsconfig.json"]
-  },
-  "modules": [],
-  "routes": [],
-  "dependencies": { "dependencies": ["@nestjs/core", "stripe"] }
-}
-```
-
-Claude documents what the extractor found. Nothing more.
-
-Currently (Phase 1), a **generic extractor** is provided (tree + entry points + configs).
-Framework extractors (NestJS, Next.js, FastAPI) will be added in later versions.
+Claude directly explores your codebase using Glob, Grep, and Read tools. No shell-based extractors — Claude reads and understands your code to produce richer, more accurate documentation.
 
 ### Marker Blocks
 
@@ -396,14 +366,9 @@ My custom intro        ← YOURS. untouched.
 ## My Notes            ← YOURS. untouched.
 ```
 
-### Mission Lifecycle
+### Missions
 
-```
-draft  →  in-progress  →  done
-  ↑          ↑               ↑
-uplan     you start      updoc detects
-creates   working        merged branch
-```
+Mission documents live in `updocs/missions/`. They're simple markdown files with a slug and creation date — git handles the rest (branches, merges, lifecycle).
 
 </details>
 

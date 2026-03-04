@@ -118,7 +118,6 @@ Error messages:
 - `branch_mismatch`: "{name}: Can only run on default branch ({default_branch}). Current branch: {current_branch}"
 - `not_found`: "{name}: Project path not found."
 - `git_not_available`: "{name}: Not a git repository."
-- `extractor_failed`: "{name}: Code analysis failed — {detail}"
 
 Print errors and exit. Do not proceed with documentation.
 
@@ -137,20 +136,19 @@ For each project in the JSON array, branch based on `mode`:
 
 2. Create `overview.md`:
    - Read `$UPDOC_ROOT/templates/project-overview.md` as a base
-   - Substitute frontmatter: `{name}` → project name, `{type}` → type, `{commit}` → head, `{date}` → current date
+   - Substitute frontmatter: `{name}` → project name, `{type}` → type (from config or detect via init.sh), `{commit}` → head, `{date}` → current date
    - Write documentation content inside `<!-- updoc:begin -->` ~ `<!-- updoc:end -->` marker block
 
 3. Marker block content rules:
-   - **Write based on extraction JSON only**. Do not read code files directly.
+   - **Explore the project directly** using Glob, Grep, and Read tools to understand the codebase
    - Write in the language setting (en = English, ko = Korean)
    - Sections to write:
-     - **Overview**: Project description (config description + extraction-based)
-     - **Directory Structure**: Tree based on extraction.structure.directories
-     - **Entry Points**: extraction.structure.entry_points (if present)
-     - **Configuration Files**: extraction.structure.config_files (if present)
-     - **Dependencies**: extraction.dependencies (if present)
-   - If modules, routes, models are empty arrays, skip those sections or note "Generic extractor does not extract this information. A framework-specific extractor is needed."
-   - **No guessing**: Do not infer information not in extraction. If uncertain, mark `TODO: manual verification needed`
+     - **Overview**: Project description and purpose
+     - **Directory Structure**: Explore with Glob and summarize
+     - **Entry Points**: Identify main entry point files
+     - **Configuration Files**: List key config files found
+     - **Dependencies**: Extract from package.json, go.mod, pyproject.toml, etc.
+   - **No guessing**: If uncertain about something, mark `TODO: manual verification needed`
 
 #### No-change mode (mode == "no_change")
 
@@ -169,29 +167,12 @@ No code changes since last sync. Skip documentation update for this project.
    - Update only `synced_from` and `synced_at` in frontmatter
 
 3. Content writing:
-   - Rewrite marker block content based on extraction (same rules as init)
-   - If `changed_files` exists, Claude decides whether to read actual code of changed files to reflect in docs
+   - Read the files listed in `changed_files` directly using Read tool
+   - Determine which documentation sections need updating based on the changes
+   - Rewrite the marker block with updated information
    - Never touch user-written content outside the marker block
 
-### Step 5: Mission status check
-
-If `missions_in_progress` is non-empty, display all non-done missions:
-
-**Merged missions** (`merged: "true"`):
-- Display: "✓ {slug} — branch {branch} merged. Mark as done?"
-- AskUserQuestion per mission → Y: update frontmatter `status: done`, add `completed: {date}` / N: skip
-
-**Branch missing missions** (`merged: "missing"`):
-- Display: "? {slug} — branch {branch} not found. Already completed?"
-- AskUserQuestion per mission → Y: update frontmatter `status: done`, add `completed: {date}` / N: skip
-
-**Other non-done missions** (`merged: "false"`):
-- Display: "• {slug} ({status}, branch: {branch})"
-- Display only. User can request to close any.
-
-If `missions_in_progress` is empty, skip silently.
-
-### Step 6: Update sync state
+### Step 5: Update sync state
 
 For each project where mode is "init" or "sync":
 ```bash
@@ -200,7 +181,7 @@ bash "$UPDOC_ROOT/scripts/update-sync-state.sh" "{name}" "{head}" "{type}"
 
 Skip `no_change` projects — their sync state is already current.
 
-### Step 7: Change report
+### Step 6: Change report
 
 Output the change report in the configured language.
 
@@ -211,7 +192,6 @@ ko example:
 ### updoc (init)
 - 📄 updocs/projects/updoc/overview.md 생성
 - 커밋: 592c292
-- 타입: generic (extractor: generic)
 
 동기화 상태가 updoc.config.json에 저장되었습니다.
 ```
@@ -230,7 +210,6 @@ en example:
 ### updoc (init)
 - 📄 Created updocs/projects/updoc/overview.md
 - Commit: 592c292
-- Type: generic (extractor: generic)
 
 Sync state saved to updoc.config.json.
 ```

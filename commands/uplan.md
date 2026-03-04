@@ -13,13 +13,13 @@ A skill that creates mission (planning) documents based on project documentation
 
 ## Procedure
 
-### Step 1: Find plugin root and gather context
+### Step 1: Find plugin root
 
 Run the following bash to locate the plugin root (`UPDOC_ROOT`):
 
 ```bash
-# 1) Dev mode: if scripts/uplan-prepare.sh exists in cwd, this is the plugin root
-if [ -f "./scripts/uplan-prepare.sh" ] && [ -f "./.claude-plugin/plugin.json" ]; then
+# 1) Dev mode: if scripts/up.sh exists in cwd, this is the plugin root
+if [ -f "./scripts/up.sh" ] && [ -f "./.claude-plugin/plugin.json" ]; then
   UPDOC_ROOT="."
 # 2) Marketplace install: search cache
 else
@@ -27,7 +27,7 @@ else
 fi
 
 # 3) Fallback: search marketplaces directory
-if [ -z "$UPDOC_ROOT" ] || [ ! -f "$UPDOC_ROOT/scripts/uplan-prepare.sh" ]; then
+if [ -z "$UPDOC_ROOT" ] || [ ! -f "$UPDOC_ROOT/scripts/up.sh" ]; then
   UPDOC_ROOT=$(find ~/.claude/plugins/marketplaces -maxdepth 6 -path "*/updoc/*/.claude-plugin/plugin.json" -print -quit 2>/dev/null | sed 's|/.claude-plugin/plugin.json||')
 fi
 ```
@@ -36,23 +36,30 @@ If UPDOC_ROOT is not found, error: "Cannot find updoc scripts. Please verify the
 
 ### Step 2: Gather context
 
+Read `updoc.config.json` and extract project info:
+
 ```bash
-bash "$UPDOC_ROOT/scripts/uplan-prepare.sh" "{title}"
+jq '{language: .language, projects: [.projects[] | {name, path, default_branch}], docs: .docs}' updoc.config.json
 ```
 
-Parse JSON. If `error` field exists, print error and exit.
+List existing mission files:
+
+```bash
+ls updocs/missions/*.md 2>/dev/null
+```
 
 ### Step 3: Check documentation existence
 
-If any project has `overview_exists: false`:
+For each project, check if `{docs.path}/{docs.projects_dir}/{name}/overview.md` exists.
+
+If any project has no overview.md:
 - Warning: "Documentation not found for the following projects: {names}. Running `/updoc:up` first is recommended."
 - If user wants to continue, proceed without docs (limited planning)
 
 ### Step 4: Load context
 
-1. Read overview.md for all projects with `overview_exists: true`
-2. Reference product_docs if present (skip if none)
-3. Read existing mission files if any (for deduplication + context)
+1. Read overview.md for all projects that have one
+2. Read existing mission files if any (for deduplication + context)
 
 ### Step 5: Planning conversation
 
@@ -75,12 +82,11 @@ Have a conversation with the user to flesh out the mission:
 
 1. Template path: Read `$UPDOC_ROOT/templates/mission.md` as a base
 2. Substitute frontmatter:
-   - `{slug}` → suggested_slug or user-specified slug
+   - `{slug}` → suggested slug or user-specified slug
    - `{date}` → current date (YYYY-MM-DD)
-   - `{branch}` → branch name based on slug (e.g., `feat/upick`)
 3. Fill each section with planning conversation results
 4. Write in the configured language
-5. Save file: `{docs_config.path}/{docs_config.missions_dir}/{date}-{slug}.md` (date in YYYY-MM-DD format)
+5. Save file: `{docs.path}/{docs.missions_dir}/{date}-{slug}.md` (date in YYYY-MM-DD format)
 
 ### Step 7: Output next steps summary (required)
 
@@ -101,8 +107,7 @@ ko example:
 
 ### 시작하기
 1. `git checkout -b feat/upick`
-2. 미션 파일의 status를 `in-progress`로 변경
-3. 각 프로젝트 디렉토리에서 태스크 수행:
+2. 각 프로젝트 디렉토리에서 태스크 수행:
    - `cd .` (updoc)
 ```
 
@@ -121,8 +126,7 @@ en example:
 
 ### Getting Started
 1. `git checkout -b feat/upick`
-2. Change mission status to `in-progress`
-3. Work on tasks in each project directory:
+2. Work on tasks in each project directory:
    - `cd .` (updoc)
 ```
 
