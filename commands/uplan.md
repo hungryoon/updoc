@@ -80,6 +80,8 @@ Have a conversation with the user to flesh out the mission:
 
 ### Step 6: Create mission document
 
+**Language enforcement**: The mission document MUST be written in the language specified by `updoc.config.yaml`'s `language` field. This overrides the conversation language. `"en"` = English, `"ko"` = Korean. This applies to all prose, headings, and descriptions.
+
 1. Template path: Read `$UPDOC_ROOT/templates/mission.md` as a base
 2. Substitute frontmatter:
    - `{slug}` → suggested slug or user-specified slug

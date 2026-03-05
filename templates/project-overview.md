@@ -8,3 +8,9 @@ synced_at: {date}
 
 <!-- updoc:begin -->
 <!-- updoc:end -->
+
+## Sections
+
+- [Architecture](architecture.md)
+- [Configuration](configuration.md)
+- [Dependencies](dependencies.md)

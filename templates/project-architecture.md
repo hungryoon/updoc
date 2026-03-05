@@ -1,10 +1,8 @@
 ---
 project: {name}
-synced_from: {commit}
-synced_at: {date}
 ---
 
-# {name}
+# {name} — Architecture
 
 <!-- updoc:begin -->
 <!-- updoc:end -->

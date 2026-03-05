@@ -7,6 +7,9 @@ set -uo pipefail
 
 CONFIG_FILE="updoc.config.yaml"
 
+# UPDOC_ROOT must be passed as environment variable for version check
+# If not set, skip version validation (backward compat)
+
 # Check yq
 if ! command -v yq &>/dev/null; then
   echo '[{"error": "yq_not_found", "detail": "yq is required. Install: brew install yq"}]' >&2
@@ -51,6 +54,17 @@ project_field() {
 main() {
   local config
   config=$(read_config) || exit 1
+
+  # --- Version Guard ---
+  if [ -n "${UPDOC_ROOT:-}" ] && [ -f "$UPDOC_ROOT/.claude-plugin/plugin.json" ]; then
+    local plugin_version config_version
+    plugin_version=$(yq -p json '.version' "$UPDOC_ROOT/.claude-plugin/plugin.json" 2>/dev/null || echo "")
+    config_version=$(echo "$config" | yq '.version // ""')
+    if [ -n "$plugin_version" ] && [ -n "$config_version" ] && [ "$plugin_version" != "$config_version" ]; then
+      printf '[{"error":"version_mismatch","config_version":"%s","plugin_version":"%s"}]\n' "$config_version" "$plugin_version"
+      exit 1
+    fi
+  fi
 
   local count
   count=$(project_count "$config")
@@ -109,12 +123,28 @@ main() {
       continue
     fi
 
+    # --- Auto Pull ---
+
+    local pull_status="up_to_date"
+    local head_before_pull
+    head_before_pull=$(cd "$path" && git rev-parse HEAD 2>/dev/null)
+    if (cd "$path" && git pull --ff-only >/dev/null 2>&1); then
+      local head_after_pull
+      head_after_pull=$(cd "$path" && git rev-parse HEAD 2>/dev/null)
+      if [ "$head_before_pull" != "$head_after_pull" ]; then
+        pull_status="pulled"
+      fi
+    else
+      echo "Warning: git pull failed for $name. Continuing with current HEAD." >&2
+      pull_status="pull_failed"
+    fi
+
     # --- Mode & Diff ---
 
     local head
     head=$(cd "$path" && git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 
-    local mode="init"
+    local mode="full_scan"
     local changed_files="[]"
 
     if [ -n "$last_sync_commit" ]; then
@@ -151,9 +181,9 @@ main() {
     # --- Build result ---
 
     local project_result
-    project_result=$(printf '{"name":"%s","mode":"%s","head":"%s","current_branch":"%s","default_branch":"%s","changed_files":%s,"language":"%s","docs_config":{"path":"%s","projects_dir":"%s","wiki_dir":"%s","missions_dir":"%s"}}' \
+    project_result=$(printf '{"name":"%s","mode":"%s","head":"%s","current_branch":"%s","default_branch":"%s","pull_status":"%s","changed_files":%s,"language":"%s","docs_config":{"path":"%s","projects_dir":"%s","wiki_dir":"%s","missions_dir":"%s"}}' \
       "$name" "$mode" "$head" "$current_branch" "$default_branch" \
-      "$changed_files" "$language" "$docs_path" "$projects_dir" \
+      "$pull_status" "$changed_files" "$language" "$docs_path" "$projects_dir" \
       "$wiki_dir" "$missions_dir")
 
     results=$(json_append "$results" "$project_result")

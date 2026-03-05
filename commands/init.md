@@ -69,6 +69,21 @@ Always create these directories (skip any that already exist):
 - `docs/projects/`
 - `docs/missions/`
 
+### Step 4.5: Set up CLAUDE.md rules
+
+Add updoc workspace rules to `CLAUDE.md`:
+- If `CLAUDE.md` does not exist, create it with the content below
+- If `CLAUDE.md` exists, check if it already contains `## updoc Rules`. If not, append the content below to the end of the file
+
+Content to add:
+```
+## updoc Rules
+
+- **Never modify files under `repos/`** — these are source clones managed by git. Read-only.
+- **All documentation work happens in `docs/`** — create and edit docs only in the docs directory.
+- **Marker blocks are sacred** — only modify content between `<!-- updoc:begin -->` and `<!-- updoc:end -->`.
+```
+
 ### Step 5: Set up .gitignore
 
 - If `.gitignore` does not exist, create it with a single line: `repos/`
@@ -115,7 +130,7 @@ Create `updoc.config.yaml` with Write — refer to `$UPDOC_ROOT/templates/config
 Create `docs/index.md` using `$UPDOC_ROOT/templates/docs-index.md` as a base:
 - Replace `{hub_name}` with the current directory name (basename of cwd)
 - Build the project table inside `<!-- updoc:begin -->` / `<!-- updoc:end -->` markers:
-  - For each registered project, add a row: `| {name} | [wiki/{name}.md](wiki/{name}.md) | [projects/{name}/overview.md](projects/{name}/overview.md) |`
+  - For each registered project, add a row: `| {name} | [wiki/{name}/index.md](wiki/{name}/index.md) | [projects/{name}/overview.md](projects/{name}/overview.md) |`
   - If no projects registered, leave the table with headers only (no rows)
 
 ### Step 10: Completion message
