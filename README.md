@@ -48,11 +48,12 @@ Tokens burned. Plans wrong. You fix it yourself. Manually. Every time.
 ## The Fix
 
 ```
+/updoc:init     →  Set up updoc in a new docs repo.
 /updoc:up       →  Docs match your code. Right now.
 /updoc:uplan    →  Plan features from real docs, not ancient ones.
 ```
 
-Two commands. That's the entire API.
+Three commands. That's the entire API.
 
 ---
 
@@ -65,13 +66,37 @@ Two commands. That's the entire API.
 /plugin install updoc@updoc
 ```
 
-### 2. Run
+### 2. Set up a docs repo
+
+```bash
+mkdir my-docs && cd my-docs && git init
+```
+
+### 3. Clone repos
+
+Clone your projects into `repos/`:
+
+```bash
+git clone git@github.com:org/api.git repos/api
+git clone git@github.com:org/web.git repos/web
+```
+
+### 4. Initialize
+
+```
+/updoc:init
+```
+
+updoc scans `repos/`, detects projects, and creates:
+- `updoc.config.yaml` — project registry + settings
+- `docs/` — documentation directories
+- `.gitignore` — excludes `repos/` from commits
+
+### 5. Generate docs
 
 ```
 /updoc:up
 ```
-
-First run? updoc detects your project and sets up automatically.
 
 Next time you merge code, run it again. Docs stay current.
 
@@ -110,12 +135,11 @@ Every cycle: docs get more accurate, plans get closer to reality.
 
 ### What You Get
 
-**After `/updoc:up`** — generated `updocs/projects/my-project/overview.md`:
+**After `/updoc:up`** — generated `docs/projects/my-project/overview.md`:
 
 ```markdown
 ---
 project: my-project
-type: nestjs
 synced_from: a1b2c3d
 synced_at: 2026-03-03
 ---
@@ -160,7 +184,7 @@ src/
 This section is mine. updoc will never touch it. Ever.
 ```
 
-**After `/updoc:uplan "Add game tab"`** — generated `updocs/missions/feat-game-tab.md`:
+**After `/updoc:uplan "Add game tab"`** — generated `docs/missions/feat-game-tab.md`:
 
 ```markdown
 ---
@@ -197,15 +221,26 @@ POST /api/games/complete
 
 ## Commands
 
+### `/updoc:init` — Set Up Docs
+
+Scans `repos/` for code projects, registers them in `updoc.config.yaml`, and sets up the docs directory structure. Run once per docs repo.
+
+What it does:
+1. Detects projects under `repos/` (default branch)
+2. Asks for confirmation
+3. Creates `updoc.config.yaml` with registered projects
+4. Creates `docs/` directory structure
+5. Adds `repos/` to `.gitignore`
+
 ### `/updoc:up` — Make Docs Catch Up
 
 Scans your code on the default branch. Generates or updates documentation.
 
-|                   | First Run                          | After That                    |
-| ----------------- | ---------------------------------- | ----------------------------- |
-| **What happens**  | Creates `overview.md` from scratch | Updates only the marker block |
-| **Your notes**    | —                                  | **Untouched. Always.**        |
-| **What it reads** | Full project exploration            | Only changes since last sync  |
+|                   | First Run                                           | After That                    |
+| ----------------- | --------------------------------------------------- | ----------------------------- |
+| **What happens**  | Creates `overview.md` + wiki (`{name}.md`) | Updates only the marker block |
+| **Your notes**    | —                                                   | **Untouched. Always.**        |
+| **What it reads** | Full project exploration                             | Only changes since last sync  |
 
 **Branch protection:** Only runs on `main` (or your default branch). Feature branch → blocked. Only merged code is reflected in docs.
 
@@ -227,22 +262,45 @@ No docs for a project? updoc doesn't guess. It says _"run `/updoc:up` first."_
 
 ---
 
-## Multiple Projects
+## Directory Structure
 
-updoc thinks in **projects**, not repos. Monorepo, multi-repo, whatever you've got.
+Projects are cloned under `repos/`, docs live separately. Documentation commits never interfere with code history.
 
-```json
-{
-  "projects": [
-    { "name": "api", "path": "./packages/api" },
-    { "name": "web", "path": "./packages/web" },
-    { "name": "shared", "path": "./packages/shared" }
-  ]
-}
+```
+my-docs/                  ← your docs repo
+├── repos/                ← git cloned source code (gitignored)
+│   ├── api/
+│   └── web/
+├── docs/                 ← documentation root (committed)
+│   ├── index.md
+│   ├── wiki/             ← what it does
+│   ├── projects/         ← how it's built
+│   └── missions/         ← what to build
+└── updoc.config.yaml     ← config (committed)
 ```
 
-One `/updoc:up` → all projects documented.
+One `/updoc:up` → all projects documented (both technical and wiki docs).
 One `/updoc:uplan` → cross-project impact analysis + API contracts.
+
+### Adding a Project Later
+
+1. Clone into `repos/`:
+   ```bash
+   git clone git@github.com:org/payments.git repos/payments
+   ```
+
+2. Add to `updoc.config.yaml`:
+   ```yaml
+   projects:
+     - name: api
+       path: ./repos/api
+       default_branch: main
+     - name: payments          # ← new
+       path: ./repos/payments
+       default_branch: main
+   ```
+
+3. Run `/updoc:up` to generate docs for the new project.
 
 ---
 
@@ -265,7 +323,7 @@ One `/updoc:uplan` → cross-project impact analysis + API contracts.
 When you start a session, updoc shows you where things stand:
 
 ```
-📋 updoc v0.2.0
+📋 updoc v0.3.0
 Projects: 3 registered / 3 synced
 Last sync: 2026-03-03 (a1b2c3d)
 
@@ -299,7 +357,7 @@ updoc:                                                         Run again → Upd
 
 ### Prerequisites
 
-`bash` 3.2+ &nbsp;·&nbsp; `jq` 1.6+ &nbsp;·&nbsp; `git`
+`bash` 3.2+ &nbsp;·&nbsp; `yq` 4+ &nbsp;·&nbsp; `git`
 
 ### Install
 
@@ -310,7 +368,7 @@ updoc:                                                         Run again → Upd
 
 ### Config
 
-`/updoc:up` auto-generates `updoc.config.json` on first run. No manual setup needed.
+`/updoc:init` generates `updoc.config.yaml` on first run. This file is committed to the repo.
 
 <details>
 <summary><strong>Config Reference</strong></summary>
@@ -318,25 +376,11 @@ updoc:                                                         Run again → Upd
 | Field                       | What                             | Default      |
 | --------------------------- | -------------------------------- | ------------ |
 | `language`                  | Output & docs language           | `en`         |
-| `projects[].type`           | Framework (`null` = auto-detect) | `null`       |
 | `projects[].default_branch` | Branch for doc updates           | `main`       |
-| `docs.path`                 | Docs root                        | `./updocs`   |
-| `docs.projects_dir`         | Project docs subdirectory        | `projects`   |
+| `docs.path`                 | Docs root                        | `./docs`     |
+| `docs.projects_dir`         | Technical docs subdirectory      | `projects`   |
+| `docs.wiki_dir`             | Wiki docs subdirectory           | `wiki`       |
 | `docs.missions_dir`         | Mission docs subdirectory        | `missions`   |
-
-</details>
-
-<details>
-<summary><strong>Multi-Project (Hub Mode)</strong></summary>
-
-For a dedicated docs repo managing multiple projects:
-
-```bash
-mkdir my-docs && cd my-docs && git init
-git clone git@github.com:org/api.git projects/api
-git clone git@github.com:org/web.git projects/web
-/updoc:up   # auto-detects projects under projects/
-```
 
 </details>
 
@@ -368,7 +412,7 @@ My custom intro        ← YOURS. untouched.
 
 ### Missions
 
-Mission documents live in `updocs/missions/`. They're simple markdown files with a slug and creation date — git handles the rest (branches, merges, lifecycle).
+Mission documents live in `docs/missions/`. They're simple markdown files with a slug and creation date — git handles the rest (branches, merges, lifecycle).
 
 </details>
 

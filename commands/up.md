@@ -36,71 +36,11 @@ Use `$UPDOC_ROOT` for all subsequent script/template references:
 - Scripts: `$UPDOC_ROOT/scripts/`
 - Templates: `$UPDOC_ROOT/templates/`
 
-### Step 1.5: Check initial setup
+### Step 1.5: Check config
 
-Check if `updoc.config.json` exists in the current directory.
-
-#### Already exists → Proceed to Step 2
-
-#### Does not exist → Initial setup flow:
-
-1. Run init.sh:
-```bash
-bash "$UPDOC_ROOT/scripts/init.sh"
-```
-
-2. Parse the JSON from stdout. Branch based on the `mode` field:
-
-**mode: "empty"** (no project code detected):
-- Create the following directories:
-  - `projects/`
-  - `updocs/projects/`
-  - `updocs/missions/`
-- Do not create config
-- Print a message and exit:
-```
-No project code detected.
-
-Created directory structure:
-  projects/
-  updocs/projects/
-  updocs/missions/
-
-Clone a project into projects/ and run /updoc:up again.
-e.g.: git clone git@github.com:org/api.git projects/api
-```
-
-**mode: "single"** (current directory is a project):
-- Display detected project info:
-```
-Starting updoc initial setup.
-
-Detected project:
-  Name: {name}
-  Path: .
-  Branch: {default_branch}
-  Framework: {type}
-
-Proceed with this setup? Enter a project description if you'd like to add one.
-```
-- AskUserQuestion to confirm with user
-- AskUserQuestion to select language (ko/en)
-- Create `updoc.config.json` with Write (refer to templates/config.json structure, add detected project to projects array)
-- Continue to Step 2
-
-**mode: "hub"** (projects detected under projects/):
-- Display detected project list:
-```
-Detected projects under projects/:
-  1. {name} ({type}) — {path}
-  2. {name} ({type}) — {path}
-
-Register these projects and generate documentation?
-```
-- AskUserQuestion to confirm with user
-- AskUserQuestion to select language
-- Create `updoc.config.json` with Write (include all detected projects)
-- Continue to Step 2
+If `updoc.config.yaml` does not exist in the current directory:
+- Print: "updoc is not initialized. Run /updoc:init first."
+- Exit. Do not proceed.
 
 ### Step 2: Run up.sh
 
@@ -130,16 +70,23 @@ For each project in the JSON array, branch based on `mode`:
 1. Create docs directories:
    ```
    {docs_config.path}/{docs_config.projects_dir}/{name}/
-   {docs_config.path}/{docs_config.projects_dir}/{name}/domains/
+   {docs_config.path}/{docs_config.wiki_dir}/
    {docs_config.path}/{docs_config.missions_dir}/
    ```
 
-2. Create `overview.md`:
+2. Create `overview.md` (developer technical docs):
    - Read `$UPDOC_ROOT/templates/project-overview.md` as a base
-   - Substitute frontmatter: `{name}` → project name, `{type}` → type (from config or detect via init.sh), `{commit}` → head, `{date}` → current date
+   - Substitute frontmatter: `{name}` → project name, `{commit}` → head, `{date}` → current date
    - Write documentation content inside `<!-- updoc:begin -->` ~ `<!-- updoc:end -->` marker block
+   - Save to: `{docs_config.path}/{docs_config.projects_dir}/{name}/overview.md`
 
-3. Marker block content rules:
+3. Create wiki (`{name}.md`) (non-developer service docs):
+   - Read `$UPDOC_ROOT/templates/project-wiki.md` as a base
+   - Substitute frontmatter: `{name}` → project name, `{commit}` → head, `{date}` → current date
+   - Write documentation content inside `<!-- updoc:begin -->` ~ `<!-- updoc:end -->` marker block
+   - Save to: `{docs_config.path}/{docs_config.wiki_dir}/{name}.md`
+
+4. Overview marker block content (developer audience):
    - **Explore the project directly** using Glob, Grep, and Read tools to understand the codebase
    - Write in the language setting (en = English, ko = Korean)
    - Sections to write:
@@ -150,18 +97,28 @@ For each project in the JSON array, branch based on `mode`:
      - **Dependencies**: Extract from package.json, go.mod, pyproject.toml, etc.
    - **No guessing**: If uncertain about something, mark `TODO: manual verification needed`
 
+5. Wiki marker block content (non-developer audience):
+   - **Explore the project directly** using Glob, Grep, and Read tools
+   - Write in the language setting (en = English, ko = Korean)
+   - Sections to write:
+     - **What is this?**: Service purpose in plain language
+     - **Key Features**: Main features the service provides
+     - **How to Access**: URLs, environments, or deployment info (if discoverable from code)
+     - **Policies & Configuration**: Key business rules, environment variables, feature flags
+   - **No guessing**: If uncertain about something, mark `TODO: manual verification needed`
+   - **Plain language**: Avoid code-level details. Focus on what the service does, not how it's built.
+
 #### No-change mode (mode == "no_change")
 
 No code changes since last sync. Skip documentation update for this project.
 
 #### Sync mode (mode == "sync")
 
-1. Read existing overview.md:
-   ```
-   {docs_config.path}/{docs_config.projects_dir}/{name}/overview.md
-   ```
+1. Read existing docs:
+   - Overview: `{docs_config.path}/{docs_config.projects_dir}/{name}/overview.md`
+   - Wiki: `{docs_config.path}/{docs_config.wiki_dir}/{name}.md`
 
-2. **Replace marker block only**:
+2. **Replace marker block only** (for both overview and wiki):
    - Rewrite content from `<!-- updoc:begin -->` to `<!-- updoc:end -->` only
    - **Never modify** content outside markers
    - Update only `synced_from` and `synced_at` in frontmatter
@@ -172,16 +129,17 @@ No code changes since last sync. Skip documentation update for this project.
    - Rewrite the marker block with updated information
    - Never touch user-written content outside the marker block
 
-### Step 5: Update sync state
+### Step 4.5: Update docs/index.md
 
-For each project where mode is "init" or "sync":
-```bash
-bash "$UPDOC_ROOT/scripts/update-sync-state.sh" "{name}" "{head}" "{type}"
-```
+After processing all projects, update `{docs_config.path}/index.md`:
+- If the file does not exist, create it using `$UPDOC_ROOT/templates/docs-index.md` as a base (replace `{hub_name}` with basename of cwd)
+- Replace the content inside `<!-- updoc:begin -->` / `<!-- updoc:end -->` markers with the current project table:
+  - Read the full project list from `updoc.config.yaml` (not just the ones processed in this run)
+  - For each project, add a row: `| {name} | [wiki/{name}.md](wiki/{name}.md) | [projects/{name}/overview.md](projects/{name}/overview.md) |`
+  - Include the table header: `| Project | Wiki | Technical |` and `|---------|------|-----------|`
+- Never modify content outside the marker block
 
-Skip `no_change` projects — their sync state is already current.
-
-### Step 6: Change report
+### Step 5: Change report
 
 Output the change report in the configured language.
 
@@ -190,10 +148,11 @@ ko example:
 ## updoc 문서 갱신 완료
 
 ### updoc (init)
-- 📄 updocs/projects/updoc/overview.md 생성
+- 📄 docs/projects/updoc/overview.md 생성
+- 📄 docs/wiki/updoc.md 생성
 - 커밋: 592c292
 
-동기화 상태가 updoc.config.json에 저장되었습니다.
+동기화 완료.
 ```
 
 ```
@@ -208,10 +167,11 @@ en example:
 ## updoc Documentation Updated
 
 ### updoc (init)
-- 📄 Created updocs/projects/updoc/overview.md
+- 📄 Created docs/projects/updoc/overview.md
+- 📄 Created docs/wiki/updoc.md
 - Commit: 592c292
 
-Sync state saved to updoc.config.json.
+Sync complete.
 ```
 
 ```

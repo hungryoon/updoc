@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # up.sh — Produce JSON metadata for the up skill
-# Reads updoc.config.json from cwd, validates each project, determines mode.
+# Reads updoc.config.yaml from cwd, validates each project, determines mode.
 # Output: JSON array to stdout. All diagnostics go to stderr.
 
 set -uo pipefail
 
-CONFIG_FILE="updoc.config.json"
+CONFIG_FILE="updoc.config.yaml"
 
-# Check jq
-if ! command -v jq &>/dev/null; then
-  echo '[{"error": "jq_not_found", "detail": "jq is required. Install: brew install jq"}]' >&2
+# Check yq
+if ! command -v yq &>/dev/null; then
+  echo '[{"error": "yq_not_found", "detail": "yq is required. Install: brew install yq"}]' >&2
   exit 1
 fi
 
@@ -20,20 +20,30 @@ die() {
   exit 1
 }
 
+# Append a JSON object string to a JSON array string
+json_append() {
+  local array="$1" item="$2"
+  if [ "$array" = "[]" ]; then
+    echo "[$item]"
+  else
+    echo "${array%]},$item]"
+  fi
+}
+
 read_config() {
   if [ ! -f "$CONFIG_FILE" ]; then
-    die "updoc.config.json not found in $(pwd)"
+    die "updoc.config.yaml not found in $(pwd)"
   fi
   cat "$CONFIG_FILE"
 }
 
 project_count() {
-  echo "$1" | jq '.projects | length'
+  echo "$1" | yq '.projects | length'
 }
 
 project_field() {
   local config="$1" index="$2" field="$3"
-  echo "$config" | jq -r ".projects[$index].$field"
+  echo "$config" | yq ".projects[$index].$field"
 }
 
 # --- Main ---
@@ -51,11 +61,12 @@ main() {
   fi
 
   # Global config fields
-  local language docs_path projects_dir missions_dir
-  language=$(echo "$config" | jq -r '.language // "en"')
-  docs_path=$(echo "$config" | jq -r '.docs.path // "./updocs"')
-  projects_dir=$(echo "$config" | jq -r '.docs.projects_dir // "projects"')
-  missions_dir=$(echo "$config" | jq -r '.docs.missions_dir // "missions"')
+  local language docs_path projects_dir wiki_dir missions_dir
+  language=$(echo "$config" | yq '.language // "en"')
+  docs_path=$(echo "$config" | yq '.docs.path // "./docs"')
+  projects_dir=$(echo "$config" | yq '.docs.projects_dir // "projects"')
+  wiki_dir=$(echo "$config" | yq '.docs.wiki_dir // "wiki"')
+  missions_dir=$(echo "$config" | yq '.docs.missions_dir // "missions"')
 
   local results="[]"
   local has_error=false
@@ -65,24 +76,25 @@ main() {
     name=$(project_field "$config" "$i" "name")
     path=$(project_field "$config" "$i" "path")
     default_branch=$(project_field "$config" "$i" "default_branch")
-    last_sync_commit=$(project_field "$config" "$i" "last_sync_commit")
 
-    [ "$last_sync_commit" = "null" ] && last_sync_commit=""
+    # Read last_sync_commit from generated docs frontmatter
+    local overview_path="${docs_path}/${projects_dir}/${name}/overview.md"
+    last_sync_commit=""
+    if [ -f "$overview_path" ]; then
+      last_sync_commit=$(yq --front-matter=extract '.synced_from' "$overview_path" 2>/dev/null || echo "")
+      [ "$last_sync_commit" = "null" ] && last_sync_commit=""
+    fi
 
     # --- Validations ---
 
     if [ ! -d "$path" ]; then
-      results=$(echo "$results" | jq \
-        --arg name "$name" \
-        '. + [{"name": $name, "error": "not_found"}]')
+      results=$(json_append "$results" "$(printf '{"name":"%s","error":"not_found"}' "$name")")
       has_error=true
       continue
     fi
 
     if ! (cd "$path" && git rev-parse --git-dir >/dev/null 2>&1); then
-      results=$(echo "$results" | jq \
-        --arg name "$name" \
-        '. + [{"name": $name, "error": "git_not_available"}]')
+      results=$(json_append "$results" "$(printf '{"name":"%s","error":"git_not_available"}' "$name")")
       has_error=true
       continue
     fi
@@ -91,11 +103,8 @@ main() {
     current_branch=$(cd "$path" && git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
 
     if [ "$current_branch" != "$default_branch" ]; then
-      results=$(echo "$results" | jq \
-        --arg name "$name" \
-        --arg current "$current_branch" \
-        --arg default "$default_branch" \
-        '. + [{"name": $name, "error": "branch_mismatch", "current_branch": $current, "default_branch": $default}]')
+      results=$(json_append "$results" "$(printf '{"name":"%s","error":"branch_mismatch","current_branch":"%s","default_branch":"%s"}' \
+        "$name" "$current_branch" "$default_branch")")
       has_error=true
       continue
     fi
@@ -118,12 +127,21 @@ main() {
 
       # Exclude updoc-managed files from diff to prevent sync loop
       if [ -n "$raw_diff" ]; then
-        filtered_diff=$(echo "$raw_diff" | grep -v "^${normalized_docs}/" | grep -v "^updoc\.config\.json$" || true)
+        filtered_diff=$(echo "$raw_diff" | grep -v "^${normalized_docs}/" | grep -v "^updoc\.config\.yaml$" || true)
       fi
 
       if [ -n "$filtered_diff" ]; then
         mode="sync"
-        changed_files=$(echo "$filtered_diff" | jq -R -s 'split("\n") | map(select(. != ""))')
+        # Build JSON array from newline-separated file list
+        changed_files="["
+        local first=true
+        while IFS= read -r file; do
+          [ -z "$file" ] && continue
+          $first || changed_files+=","
+          changed_files+="\"$file\""
+          first=false
+        done <<< "$filtered_diff"
+        changed_files+="]"
       else
         mode="no_change"
         changed_files="[]"
@@ -133,38 +151,21 @@ main() {
     # --- Build result ---
 
     local project_result
-    project_result=$(jq -n \
-      --arg name "$name" \
-      --arg mode "$mode" \
-      --arg head "$head" \
-      --arg current_branch "$current_branch" \
-      --arg default_branch "$default_branch" \
-      --argjson changed_files "$changed_files" \
-      --arg language "$language" \
-      --arg docs_path "$docs_path" \
-      --arg projects_dir "$projects_dir" \
-      --arg missions_dir "$missions_dir" \
-      '{
-        name: $name,
-        mode: $mode,
-        head: $head,
-        current_branch: $current_branch,
-        default_branch: $default_branch,
-        changed_files: $changed_files,
-        language: $language,
-        docs_config: { path: $docs_path, projects_dir: $projects_dir, missions_dir: $missions_dir }
-      }')
+    project_result=$(printf '{"name":"%s","mode":"%s","head":"%s","current_branch":"%s","default_branch":"%s","changed_files":%s,"language":"%s","docs_config":{"path":"%s","projects_dir":"%s","wiki_dir":"%s","missions_dir":"%s"}}' \
+      "$name" "$mode" "$head" "$current_branch" "$default_branch" \
+      "$changed_files" "$language" "$docs_path" "$projects_dir" \
+      "$wiki_dir" "$missions_dir")
 
-    results=$(echo "$results" | jq --argjson proj "$project_result" '. + [$proj]')
+    results=$(json_append "$results" "$project_result")
   done
 
   # If any error, output only errors
   if [ "$has_error" = true ]; then
-    echo "$results" | jq '[.[] | select(.error)]'
+    echo "$results" | yq -p json -o json '[.[] | select(.error)]'
     exit 1
   fi
 
-  echo "$results" | jq .
+  echo "$results" | yq -p json -o json '.'
 }
 
 main

@@ -36,10 +36,10 @@ If UPDOC_ROOT is not found, error: "Cannot find updoc scripts. Please verify the
 
 ### Step 2: Gather context
 
-Read `updoc.config.json` and extract project info:
+Read `updoc.config.yaml` and extract project info:
 
 ```bash
-jq '{language: .language, projects: [.projects[] | {name, path, default_branch}], docs: .docs}' updoc.config.json
+yq -o json '{language: .language, projects: [.projects[] | {name, path, default_branch}], docs: .docs}' updoc.config.yaml
 ```
 
 List existing mission files:

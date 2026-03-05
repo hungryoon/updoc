@@ -1,0 +1,13 @@
+version: "0.3.0"
+language: en
+projects: []
+# Example:
+# projects:
+#   - name: api
+#     path: ./repos/api
+#     default_branch: main
+docs:
+  path: ./docs
+  projects_dir: projects
+  wiki_dir: wiki
+  missions_dir: missions
