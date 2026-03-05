@@ -238,13 +238,13 @@ Scans your code on the default branch. Generates or updates documentation.
 
 |                   | First Run                                           | After That                    |
 | ----------------- | --------------------------------------------------- | ----------------------------- |
-| **What happens**  | Creates `overview.md` + wiki (`{name}.md`) | Updates only the marker block |
+| **What happens**  | Creates `overview.md` + 3 project files + 4 wiki files | Updates only the marker block |
 | **Your notes**    | —                                                   | **Untouched. Always.**        |
 | **What it reads** | Full project exploration                             | Only changes since last sync  |
 
 **Branch protection:** Only runs on `main` (or your default branch). Feature branch → blocked. Only merged code is reflected in docs.
 
-**No guessing:** If Claude can't confirm it from the codebase, it doesn't write it. You'll see `TODO: manual verification needed` instead of plausible lies.
+**No guessing:** If Claude can't confirm it from the codebase, it doesn't write it. It asks the user via AskUserQuestion instead of plausible lies.
 
 ### `/updoc:uplan` — Plan From Reality
 
@@ -310,7 +310,7 @@ One `/updoc:uplan` → cross-project impact analysis + API contracts.
 
 **Docs reflect reality.** Only merged code gets documented. Feature branches are blocked. Your docs are always a snapshot of what's actually running.
 
-**No guessing.** Claude explores your codebase directly using Glob, Grep, and Read. If it can't confirm something from the code, it doesn't write it.
+**No guessing.** Claude explores your codebase directly using Glob, Grep, and Read. If it can't confirm something from the code, it asks the user via AskUserQuestion rather than guessing.
 
 **Your notes are never touched.** The marker block system (`<!-- updoc:begin/end -->`) separates updoc's sections from yours. Notes, architecture decisions, caveats — all preserved through every sync.
 
@@ -323,7 +323,7 @@ One `/updoc:uplan` → cross-project impact analysis + API contracts.
 When you start a session, updoc shows you where things stand:
 
 ```
-📋 updoc v0.3.0
+📋 updoc v0.3.2
 Projects: 3 registered / 3 synced
 Last sync: 2026-03-03 (a1b2c3d)
 

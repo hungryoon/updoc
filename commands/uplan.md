@@ -70,7 +70,7 @@ Have a conversation with the user to flesh out the mission:
 3. **TO-BE**: Target state
 4. **Impact Scope**: Which parts of which projects are affected
    - Analyze **based on project docs only**. Do not guess information not in docs
-   - If docs are insufficient, mark "TODO: re-analyze after /updoc:up"
+   - If docs are insufficient, use AskUserQuestion to ask the user whether to proceed with limited info or run `/updoc:up` first
 5. **API Contracts**: Write if cross-project communication is needed
    - Endpoints + request/response schemas
    - Do not include implementation details (DB schemas, internal logic)

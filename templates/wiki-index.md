@@ -6,3 +6,5 @@ project: {name}
 
 <!-- updoc:begin -->
 <!-- updoc:end -->
+
+## Pages

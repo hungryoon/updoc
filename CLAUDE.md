@@ -17,7 +17,10 @@ Shell scripts + command specs (md) + templates. No build step, no runtime depend
 | `scripts/init.sh` | Project detection under `repos/` |
 | `hooks/session-start.sh` | Session status display (projects, sync state) |
 | `templates/` | Config, overview, wiki, mission, index templates |
-| `templates/project-wiki.md` | Wiki template for non-developer docs |
+| `templates/project-architecture.md` | Architecture template |
+| `templates/project-configuration.md` | Configuration template |
+| `templates/project-dependencies.md` | Dependencies template |
+| `templates/wiki-index.md` | Wiki index template |
 | `templates/docs-index.md` | Index template for docs |
 | `updoc.config.yaml` | Per-workspace config (committed) |
 | `concept.md` | Phase 1 design origin (historical, may differ from current) |
@@ -33,7 +36,7 @@ Shell scripts + command specs (md) + templates. No build step, no runtime depend
 - **Command specs** are written in English (`commands/*.md`)
 - **README** maintained in English (`README.md`) + Korean (`README.ko.md`)
 - **Marker blocks** (`<!-- updoc:begin -->` / `<!-- updoc:end -->`) — never modify content outside these markers
-- **No guessing** — if Claude can't confirm it from the codebase, don't document it. Use `TODO: manual verification needed`
+- **No guessing** — if Claude can't confirm it from the codebase, don't document it. Ask the user using AskUserQuestion before writing uncertain information.
 - **Docs reflect merged code only** — `/updoc:up` is blocked on non-default branches
 - **Dedicated docs repo** — projects are cloned under `repos/`, docs live separately
 
